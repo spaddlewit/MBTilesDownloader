@@ -4,17 +4,17 @@ If the mbtiles database already exists, it will append the new tiles to the exis
 
 # Usage
 
-  using BruTile;
-  using BruTile.Predefined;
+    using BruTile;
+    using BruTile.Predefined;
 
-  double[] wgs84Bounds = new double[4] { minLon, minLat, maxLon, maxLat };
+    double[] wgs84Bounds = new double[4] { minLon, minLat, maxLon, maxLat };
 
-  string urlFormat = "http://a.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  BruTile.Web.HttpTileSource ts = new HttpTileSource(new GlobalSphericalMercator(0, 18),
-                                  urlFormat, null, "OpenStreetMap",
-                                  null, null, null);
+    string urlFormat = "http://a.tile.openstreetmap.org/{z}/{x}/{y}.png";
+    BruTile.Web.HttpTileSource ts = new HttpTileSource(new GlobalSphericalMercator(0, 18),
+                                    urlFormat, null, "OpenStreetMap",
+                                    null, null, null);
 
-  MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, HttpTileSource);
+    MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, HttpTileSource);
 
 # Note
 
