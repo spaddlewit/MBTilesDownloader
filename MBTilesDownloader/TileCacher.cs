@@ -90,7 +90,7 @@ namespace MBTilesDownloader
             return (1 << level) - row - 1;
         }
 
-        public static void Cache(string dbFilename, double[] xy, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource)
+        public static void Cache(string dbFilename, double[] xy, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
         {
             double[] originalBounds = new double[4]; // Bounds in WGS1984
             xy.CopyTo(originalBounds, 0);
@@ -130,10 +130,10 @@ namespace MBTilesDownloader
 
                 var metaList = new List<MBTiles.Domain.metadata>();
 
-                metaList.Add(new MBTiles.Domain.metadata { name = "name", value = "Offline - Street" });
+                metaList.Add(new MBTiles.Domain.metadata { name = "name", value = dbName });
                 metaList.Add(new MBTiles.Domain.metadata { name = "type", value = "baselayer" });
                 metaList.Add(new MBTiles.Domain.metadata { name = "version", value = "1" });
-                metaList.Add(new MBTiles.Domain.metadata { name = "description", value = "Offline - Street" });
+                metaList.Add(new MBTiles.Domain.metadata { name = "description", value = dbDescription });
                 metaList.Add(new MBTiles.Domain.metadata { name = "format", value = bag.First().mimeType.Contains("/png") ? "png" : "jpg" });
 
                 foreach (var meta in metaList)
