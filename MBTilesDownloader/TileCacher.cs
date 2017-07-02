@@ -23,7 +23,7 @@ using BruTile.Predefined;
 using System.Threading.Tasks;
 using System.Globalization;
 
-namespace TileCacheTest.PCL
+namespace MBTilesDownloader
 {
     public static class TileCacher
     {
@@ -90,7 +90,7 @@ namespace TileCacheTest.PCL
             return (1 << level) - row - 1;
         }
 
-        public static void Cache(string dbFilename, double[] xy, string level, string uriFormat)
+        public static void Cache(string dbFilename, double[] xy, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource)
         {
             double[] originalBounds = new double[4]; // Bounds in WGS1984
             xy.CopyTo(originalBounds, 0);
@@ -101,8 +101,6 @@ namespace TileCacheTest.PCL
             // xy is now in SphericalMercator projection
 
             BruTile.Extent extent = new BruTile.Extent(xy[0], xy[1], xy[2], xy[3]);
-
-            ITileSource tileSource = KnownTileSources.Create(KnownTileSource.OpenStreetMap, null, null, null);
 
             var tileInfos = tileSource.Schema.GetTileInfos(extent, level);
 
