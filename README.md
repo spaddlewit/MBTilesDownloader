@@ -14,7 +14,7 @@ If the mbtiles database already exists, it will append the new tiles to the exis
                                     urlFormat, null, "OpenStreetMap",
                                     null, null, null);
 
-    MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, HttpTileSource);
+    MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, ts);
 
 # Note
 
