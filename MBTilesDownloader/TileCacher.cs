@@ -113,7 +113,7 @@ namespace MBTilesDownloader
                 {
                     fetchTasks.Add(Task.Run(async () => await FetchTile(ti, client, bag, uriFormat)));
 
-                    if (fetchTasks.Count > 2)
+                    if (fetchTasks.Count > 1) // Limit 2 to concurrent download threads
                     {
                         Task.WaitAll(fetchTasks.ToArray());
                         fetchTasks.Clear();
