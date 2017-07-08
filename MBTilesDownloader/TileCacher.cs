@@ -90,19 +90,41 @@ namespace MBTilesDownloader
             return (1 << level) - row - 1;
         }
 
-        public static void Cache(string dbFilename, double[] xy, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
+        public static void Cache(string dbFilename, List<double[]> boundsList, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
         {
-            double[] originalBounds = new double[4]; // Bounds in WGS1984
-            xy.CopyTo(originalBounds, 0);
+            double[] originalBounds = new double[4] { double.MaxValue, double.MaxValue, double.MinValue, double.MinValue }; // In WGS1984, the total extent of all bounds
 
-            ToMercator(ref xy[0], ref xy[1]);
-            ToMercator(ref xy[2], ref xy[3]);
+            List<TileInfo> tileInfos = new List<TileInfo>();
+            foreach (double[] xy in boundsList)
+            {
+                if (xy[0] < originalBounds[0])
+                    originalBounds[0] = xy[0];
+                if (xy[1] < originalBounds[1])
+                    originalBounds[1] = xy[1];
+                if (xy[2] > originalBounds[2])
+                    originalBounds[2] = xy[2];
+                if (xy[3] > originalBounds[3])
+                    originalBounds[3] = xy[3];
 
-            // xy is now in SphericalMercator projection
+                ToMercator(ref xy[0], ref xy[1]);
+                ToMercator(ref xy[2], ref xy[3]);
 
-            BruTile.Extent extent = new BruTile.Extent(xy[0], xy[1], xy[2], xy[3]);
+                // xy is now in SphericalMercator projection
 
-            var tileInfos = tileSource.Schema.GetTileInfos(extent, level);
+                BruTile.Extent extent = new BruTile.Extent(xy[0], xy[1], xy[2], xy[3]);
+
+                var curTileInfos = tileSource.Schema.GetTileInfos(extent, level);
+
+                foreach (var tileInfo in curTileInfos)
+                {
+                    TileInfo ti = tileInfos.Where(x => x.Index.Col == tileInfo.Index.Col && x.Index.Row == tileInfo.Index.Row && x.Index.Level == tileInfo.Index.Level).FirstOrDefault();
+
+                    if (ti != null) // This tile is already in the list
+                        continue;
+
+                    tileInfos.Add(tileInfo);
+                }
+            }
 
             ConcurrentBag<LoadedTile> bag = new ConcurrentBag<LoadedTile>();
 
@@ -186,6 +208,13 @@ namespace MBTilesDownloader
                         db.Insert(tile);
                 }
             }
+        }
+
+        public static void Cache(string dbFilename, double[] bounds, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
+        {
+            List<double[]> list = new List<double[]>();
+            list.Add(bounds);
+            Cache(dbFilename, list, level, uriFormat, tileSource, dbName, dbDescription);
         }
     }
 }
