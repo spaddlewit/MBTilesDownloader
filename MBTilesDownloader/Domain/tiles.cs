@@ -30,6 +30,8 @@ namespace MBTiles.Domain
         public int tile_column { get; set; }
         public int tile_row { get; set; }
 
+        public DateTime createDate { get; set; }
+
         public byte[] tile_data { get; set; }
     }
 }

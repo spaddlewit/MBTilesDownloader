@@ -90,7 +90,7 @@ namespace MBTilesDownloader
             return (1 << level) - row - 1;
         }
 
-        public static void Cache(string dbFilename, List<double[]> boundsList, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
+        public static void Cache(TileDownloadOptions options, List<double[]> boundsList, BruTile.Web.HttpTileSource tileSource)
         {
             double[] originalBounds = new double[4] { double.MaxValue, double.MaxValue, double.MinValue, double.MinValue }; // In WGS1984, the total extent of all bounds
 
@@ -113,7 +113,7 @@ namespace MBTilesDownloader
 
                 BruTile.Extent extent = new BruTile.Extent(xy[0], xy[1], xy[2], xy[3]);
 
-                var curTileInfos = tileSource.Schema.GetTileInfos(extent, level);
+                var curTileInfos = tileSource.Schema.GetTileInfos(extent, options.Level.ToString());
 
                 foreach (var tileInfo in curTileInfos)
                 {
@@ -126,6 +126,36 @@ namespace MBTilesDownloader
                 }
             }
 
+            if (options.MaxAge.HasValue)
+            {
+                using (var db = new SQLite.SQLiteConnection(options.DBFilename))
+                {
+                    // Create the tables, so at least they will exist
+                    db.CreateTable<MBTiles.Domain.metadata>();
+                    db.CreateTable<MBTiles.Domain.tiles>();
+
+                    for (int i = 0; i < tileInfos.Count; i++)
+                    {
+                        TileInfo tileInfo = tileInfos[i];
+
+                        int tileLevel = int.Parse(tileInfo.Index.Level);
+                        int tileRow = OSMtoTMS(tileLevel, tileInfo.Index.Row);
+                        MBTiles.Domain.tiles oldTile = db.Table<MBTiles.Domain.tiles>().Where(x => x.zoom_level == tileLevel && x.tile_column == tileInfo.Index.Col && x.tile_row == tileRow).FirstOrDefault();
+
+                        if (oldTile != null && (DateTime.Now - oldTile.createDate) <= options.MaxAge.Value)
+                        {
+                            // This tile hasn't expired yet, so don't download it.
+                            tileInfos.Remove(tileInfo);
+                            i--;
+                        }
+                    }
+                }
+            }
+
+            // Make sure we have any tiles left to download. If not, we are done!
+            if (tileInfos.Count == 0)
+                return;
+
             ConcurrentBag<LoadedTile> bag = new ConcurrentBag<LoadedTile>();
 
             using (System.Net.Http.HttpClient client = new System.Net.Http.HttpClient())
@@ -133,7 +163,7 @@ namespace MBTilesDownloader
                 List<Task> fetchTasks = new List<Task>();
                 foreach (var ti in tileInfos)
                 {
-                    fetchTasks.Add(Task.Run(async () => await FetchTile(ti, client, bag, uriFormat)));
+                    fetchTasks.Add(Task.Run(async () => await FetchTile(ti, client, bag, options.UriFormat)));
 
                     if (fetchTasks.Count > 1) // Limit 2 to concurrent download threads
                     {
@@ -145,17 +175,17 @@ namespace MBTilesDownloader
                 Task.WaitAll(fetchTasks.ToArray());
             }
 
-            using (var db = new SQLite.SQLiteConnection(dbFilename))
+            using (var db = new SQLite.SQLiteConnection(options.DBFilename))
             {
                 db.CreateTable<MBTiles.Domain.metadata>();
                 db.CreateTable<MBTiles.Domain.tiles>();
 
                 var metaList = new List<MBTiles.Domain.metadata>();
 
-                metaList.Add(new MBTiles.Domain.metadata { name = "name", value = dbName });
+                metaList.Add(new MBTiles.Domain.metadata { name = "name", value = options.DBName });
                 metaList.Add(new MBTiles.Domain.metadata { name = "type", value = "baselayer" });
                 metaList.Add(new MBTiles.Domain.metadata { name = "version", value = "1" });
-                metaList.Add(new MBTiles.Domain.metadata { name = "description", value = dbDescription });
+                metaList.Add(new MBTiles.Domain.metadata { name = "description", value = options.DBDescription });
                 metaList.Add(new MBTiles.Domain.metadata { name = "format", value = bag.First().mimeType.Contains("/png") ? "png" : "jpg" });
 
                 foreach (var meta in metaList)
@@ -194,6 +224,7 @@ namespace MBTilesDownloader
                     tile.tile_column = lt.ti.Index.Col;
                     tile.tile_row = lt.ti.Index.Row;
                     tile.tile_data = lt.data;
+                    tile.createDate = DateTime.Now;
 
                     tile.tile_row = OSMtoTMS(tile.zoom_level, tile.tile_row);
 
@@ -210,11 +241,11 @@ namespace MBTilesDownloader
             }
         }
 
-        public static void Cache(string dbFilename, double[] bounds, string level, string uriFormat, BruTile.Web.HttpTileSource tileSource, string dbName = "Offline", string dbDescription = "Offline")
+        public static void Cache(TileDownloadOptions options, double[] bounds, BruTile.Web.HttpTileSource tileSource)
         {
             List<double[]> list = new List<double[]>();
             list.Add(bounds);
-            Cache(dbFilename, list, level, uriFormat, tileSource, dbName, dbDescription);
+            Cache(options, list, tileSource);
         }
     }
 }

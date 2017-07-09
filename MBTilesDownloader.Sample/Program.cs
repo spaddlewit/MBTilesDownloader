@@ -26,7 +26,17 @@ namespace MBTilesDownloader.Sample
                         null, null,
                         null);
 
-            MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, ts);
+            TileDownloadOptions tdo = new TileDownloadOptions
+            {
+                DBFilename = "myDatabase.mbtiles",
+                Level = 14,
+                UriFormat = urlFormat,
+                DBName = "Offline",
+                DBDescription = "Offline",
+                MaxAge = new TimeSpan(60, 0, 0, 0),
+            };
+
+            MBTilesDownloader.TileCacher.Cache(tdo, wgs84Bounds, ts);
         }
     }
 }
