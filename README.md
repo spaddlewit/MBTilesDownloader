@@ -2,6 +2,8 @@
 Given WGS84 bounds and a tile source, downloads tiles into an mbtiles database for offline use.
 If the mbtiles database already exists, it will append the new tiles to the existing database, rather than overwrite.
 
+It also supports passing a list of bounds, and applying an age to already-downloaded tiles.
+
 # Usage
 
     using BruTile;
@@ -14,7 +16,16 @@ If the mbtiles database already exists, it will append the new tiles to the exis
                                     urlFormat, null, "OpenStreetMap",
                                     null, null, null);
 
-    MBTilesDownloader.TileCacher.Cache("myDatabase.mbtiles", wgs84Bounds, "14", urlFormat, ts);
+    TileDownloadOptions tdo = new TileDownloadOptions
+    {
+        DBFilename = "myDatabase.mbtiles",
+        Level = 14,
+        UriFormat = urlFormat,
+        DBName = "Offline",
+        DBDescription = "Offline",
+    };
+
+    MBTilesDownloader.TileCacher.Cache(tdo, wgs84Bounds, ts);
 
 # Note
 
